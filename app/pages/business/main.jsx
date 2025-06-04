@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import InputDrawer from "./InputDrawer";
+import { useMetrics } from "../../hooks/useMetrics";
 import {
   ChevronUp,
   ChevronDown,
@@ -8,12 +10,18 @@ import {
   Bell,
   MessageCircle,
   X,
-  BarChart3,
+  BarChart2,
   TrendingUp,
   TrendingDown,
   Minus,
   Eye,
   RotateCcw,
+  Upload,
+  Database,
+  Calculator,
+  Calendar,
+  FileText,
+  RefreshCw,
 } from "lucide-react";
 import {
   LineChart,
@@ -29,6 +37,39 @@ const Pulseboard = () => {
   const [chatOpen, setChatOpen] = useState(false);
   const [compareMode, setCompareMode] = useState(null);
   const [businessStatus, setBusinessStatus] = useState("Growing");
+
+  const categories = {
+    financial: {
+      title: "Financial Metrics",
+      color: "#3B82F6",
+      bgColor: "#F8FAFC"
+    },
+    product: {
+      title: "Product / Tech Metrics",
+      color: "#8B5CF6",
+      bgColor: "#FAF5FF"
+    },
+    marketing: {
+      title: "Marketing Metrics",
+      color: "#F97316",
+      bgColor: "#FFF7ED"
+    },
+    sales: {
+      title: "Sales Metrics",
+      color: "#10B981",
+      bgColor: "#F0FDF4"
+    },
+    customer: {
+      title: "Customer Metrics",
+      color: "#EF4444",
+      bgColor: "#FEF2F2"
+    },
+    operations: {
+      title: "Operations Metrics",
+      color: "#6B7280",
+      bgColor: "#F9FAFB"
+    }
+  };
 
   // Sample data for charts
   const generateTrendData = () => {
@@ -210,29 +251,92 @@ const Pulseboard = () => {
     );
   };
 
-  // Section Component
-  const MetricSection = ({ title, color, children, bgColor }) => (
-    <div
-      className="min-h-screen flex flex-col justify-center py-12 px-6"
-      style={{ backgroundColor: bgColor }}
-    >
-      <div className="max-w-7xl mx-auto w-full">
-        <div className="text-center mb-12">
-          <h2
-            className="text-4xl font-bold text-gray-800 mb-2"
-            style={{ color }}
-          >
-            {title}
-          </h2>
+  const MetricSection = ({ title, color, bgColor, category }) => {
+    const { metrics, loading, error } = useMetrics(category);
+    const [isInputOpen, setIsInputOpen] = useState(false);
+
+    if (loading) {
+      return (
+        <div
+          className="min-h-screen flex items-center justify-center"
+          style={{ backgroundColor: bgColor }}
+        >
           <div
-            className="w-24 h-1 mx-auto rounded-full"
-            style={{ backgroundColor: color }}
+            className="animate-spin rounded-full h-32 w-32 border-b-2"
+            style={{ borderColor: color }}
           ></div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">{children}</div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div
+          className="min-h-screen flex items-center justify-center"
+          style={{ backgroundColor: bgColor }}
+        >
+          <div className="text-red-500">
+            Error loading metrics: {error.message}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div
+        className="min-h-screen flex flex-col justify-center py-12 px-6"
+        style={{ backgroundColor: bgColor }}
+      >
+        <div className="max-w-7xl mx-auto w-full">
+          <div className="flex justify-between items-center mb-12">
+            <div>
+              <h2
+                className="text-4xl font-bold text-gray-800 mb-2"
+                style={{ color }}
+              >
+                {title}
+              </h2>
+              <div
+                className="w-24 h-1 rounded-full"
+                style={{ backgroundColor: color }}
+              ></div>
+            </div>
+            <button
+              onClick={() => setIsInputOpen(true)}
+              className="flex items-center space-x-2 px-4 py-2 rounded-lg border hover:bg-gray-50 transition-colors"
+            >
+              <Settings size={16} />
+              <span>✏️ Inputs</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {metrics.map((metric) => (
+              <MetricCard
+                key={metric.id}
+                title={metric.title}
+                value={metric.value}
+                trend={metric.trend}
+                trendPercent={metric.trendPercent}
+                color={color}
+                icon={metric.icon}
+                data={metric.rawData}
+                category={category}
+              />
+            ))}
+          </div>
+        </div>
+
+        <InputDrawer
+          isOpen={isInputOpen}
+          onClose={() => setIsInputOpen(false)}
+          category={category}
+          metrics={metrics}
+          color={color}
+        />
       </div>
-    </div>
-  );
+    );
+  };
 
   const statusColors = {
     Stable: "bg-blue-400",
@@ -241,12 +345,9 @@ const Pulseboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50" style={{ position: "relative" }}>
+    <div className="min-h-screen bg-gray-50">
       {/* Top Bar */}
-      <div
-        className="fixed top-0 left-0 right-0 bg-white shadow-sm z-30 border-b"
-        style={{ position: "absolute" }}
-      >
+      <div className="fixed top-0 left-0 right-0 bg-white shadow-sm z-30 border-b">
         <div className="flex justify-between items-center px-6 py-4">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
@@ -272,389 +373,15 @@ const Pulseboard = () => {
 
       {/* Main Content */}
       <div className="pt-20">
-        {/* Financial Metrics */}
-        <MetricSection
-          title="Financial Metrics"
-          color="#3B82F6"
-          bgColor="#F8FAFC"
-        >
-          <MetricCard
-            title="Revenue"
-            value="$128,400"
-            trend="up"
-            trendPercent="+12.5%"
-            color="#3B82F6"
-            icon="💰"
-            data={generateTrendData()}
-            category="financial"
+        {Object.entries(categories).map(([key, category]) => (
+          <MetricSection
+            key={key}
+            title={category.title}
+            color={category.color}
+            bgColor={category.bgColor}
+            category={key}
           />
-          <MetricCard
-            title="Customer Acquisition Cost"
-            value="$45.20"
-            trend="down"
-            trendPercent="-8.3%"
-            color="#3B82F6"
-            icon="🎯"
-            data={generateTrendData()}
-            category="financial"
-          />
-          <MetricCard
-            title="Customer Lifetime Value"
-            value="$2,340"
-            trend="up"
-            trendPercent="+15.7%"
-            color="#3B82F6"
-            icon="🔁"
-            data={generateTrendData()}
-            category="financial"
-          />
-          <MetricCard
-            title="Gross Profit Margin"
-            value="68.5%"
-            trend="up"
-            trendPercent="+2.1%"
-            color="#3B82F6"
-            icon="📈"
-            data={generateTrendData()}
-            category="financial"
-          />
-          <MetricCard
-            title="Net Profit Margin"
-            value="24.3%"
-            trend="stable"
-            trendPercent="0.0%"
-            color="#3B82F6"
-            icon="💼"
-            data={generateTrendData()}
-            category="financial"
-          />
-          <MetricCard
-            title="Burn Rate"
-            value="$18,500"
-            trend="down"
-            trendPercent="-5.2%"
-            color="#3B82F6"
-            icon="🔥"
-            data={generateTrendData()}
-            category="financial"
-          />
-        </MetricSection>
-
-        {/* Product/Tech Metrics */}
-        <MetricSection
-          title="Product / Tech Metrics"
-          color="#8B5CF6"
-          bgColor="#FAF5FF"
-        >
-          <MetricCard
-            title="DAU / MAU"
-            value="12.5K / 45.2K"
-            trend="up"
-            trendPercent="+18.2%"
-            color="#8B5CF6"
-            icon="👥"
-            data={generateTrendData()}
-            category="product"
-          />
-          <MetricCard
-            title="Bug Rate"
-            value="2.3%"
-            trend="down"
-            trendPercent="-12.1%"
-            color="#8B5CF6"
-            icon="🐞"
-            data={generateTrendData()}
-            category="product"
-          />
-          <MetricCard
-            title="Feature Adoption"
-            value="76.8%"
-            trend="up"
-            trendPercent="+9.4%"
-            color="#8B5CF6"
-            icon="📌"
-            data={generateTrendData()}
-            category="product"
-          />
-          <MetricCard
-            title="Deployment Frequency"
-            value="14/week"
-            trend="up"
-            trendPercent="+25.0%"
-            color="#8B5CF6"
-            icon="🚀"
-            data={generateTrendData()}
-            category="product"
-          />
-          <MetricCard
-            title="Time to Market"
-            value="23 days"
-            trend="down"
-            trendPercent="-15.3%"
-            color="#8B5CF6"
-            icon="⏱"
-            data={generateTrendData()}
-            category="product"
-          />
-          <MetricCard
-            title="Uptime"
-            value="99.94%"
-            trend="stable"
-            trendPercent="+0.1%"
-            color="#8B5CF6"
-            icon="📡"
-            data={generateTrendData()}
-            category="product"
-          />
-        </MetricSection>
-
-        {/* Marketing Metrics */}
-        <MetricSection
-          title="Marketing Metrics"
-          color="#F97316"
-          bgColor="#FFF7ED"
-        >
-          <MetricCard
-            title="Cost Per Lead"
-            value="$28.50"
-            trend="down"
-            trendPercent="-11.7%"
-            color="#F97316"
-            icon="🎣"
-            data={generateTrendData()}
-            category="marketing"
-          />
-          <MetricCard
-            title="Website Traffic"
-            value="125.4K"
-            trend="up"
-            trendPercent="+22.8%"
-            color="#F97316"
-            icon="📊"
-            data={generateTrendData()}
-            category="marketing"
-          />
-          <MetricCard
-            title="Conversion Rate"
-            value="3.2%"
-            trend="up"
-            trendPercent="+7.5%"
-            color="#F97316"
-            icon="🔄"
-            data={generateTrendData()}
-            category="marketing"
-          />
-          <MetricCard
-            title="Bounce Rate"
-            value="32.1%"
-            trend="down"
-            trendPercent="-4.3%"
-            color="#F97316"
-            icon="🔙"
-            data={generateTrendData()}
-            category="marketing"
-          />
-          <MetricCard
-            title="Email Open Rate"
-            value="24.7%"
-            trend="up"
-            trendPercent="+3.2%"
-            color="#F97316"
-            icon="📩"
-            data={generateTrendData()}
-            category="marketing"
-          />
-          <MetricCard
-            title="Social Engagement"
-            value="8.9K"
-            trend="up"
-            trendPercent="+16.4%"
-            color="#F97316"
-            icon="💬"
-            data={generateTrendData()}
-            category="marketing"
-          />
-        </MetricSection>
-
-        {/* Sales Metrics */}
-        <MetricSection title="Sales Metrics" color="#10B981" bgColor="#F0FDF4">
-          <MetricCard
-            title="Monthly Recurring Revenue"
-            value="$89,230"
-            trend="up"
-            trendPercent="+19.6%"
-            color="#10B981"
-            icon="💸"
-            data={generateTrendData()}
-            category="sales"
-          />
-          <MetricCard
-            title="Sales Growth Rate"
-            value="14.2%"
-            trend="up"
-            trendPercent="+2.8%"
-            color="#10B981"
-            icon="📈"
-            data={generateTrendData()}
-            category="sales"
-          />
-          <MetricCard
-            title="Average Deal Size"
-            value="$4,850"
-            trend="up"
-            trendPercent="+8.9%"
-            color="#10B981"
-            icon="💼"
-            data={generateTrendData()}
-            category="sales"
-          />
-          <MetricCard
-            title="Win Rate"
-            value="67.3%"
-            trend="up"
-            trendPercent="+5.1%"
-            color="#10B981"
-            icon="🏆"
-            data={generateTrendData()}
-            category="sales"
-          />
-          <MetricCard
-            title="Sales Cycle Length"
-            value="34 days"
-            trend="down"
-            trendPercent="-6.7%"
-            color="#10B981"
-            icon="⏳"
-            data={generateTrendData()}
-            category="sales"
-          />
-          <MetricCard
-            title="Churn Rate"
-            value="2.1%"
-            trend="down"
-            trendPercent="-12.5%"
-            color="#10B981"
-            icon="🔄"
-            data={generateTrendData()}
-            category="sales"
-          />
-        </MetricSection>
-
-        {/* Customer Metrics */}
-        <MetricSection
-          title="Customer Metrics"
-          color="#EF4444"
-          bgColor="#FEF2F2"
-        >
-          <MetricCard
-            title="Net Promoter Score"
-            value="72"
-            trend="up"
-            trendPercent="+8.5%"
-            color="#EF4444"
-            icon="❤️"
-            data={generateTrendData()}
-            category="customer"
-          />
-          <MetricCard
-            title="Customer Retention Rate"
-            value="94.7%"
-            trend="up"
-            trendPercent="+1.2%"
-            color="#EF4444"
-            icon="🔁"
-            data={generateTrendData()}
-            category="customer"
-          />
-          <MetricCard
-            title="Customer Satisfaction"
-            value="4.6/5"
-            trend="stable"
-            trendPercent="+0.1"
-            color="#EF4444"
-            icon="😀"
-            data={generateTrendData()}
-            category="customer"
-          />
-          <MetricCard
-            title="First Response Time"
-            value="2.3 hrs"
-            trend="down"
-            trendPercent="-18.7%"
-            color="#EF4444"
-            icon="⌚"
-            data={generateTrendData()}
-            category="customer"
-          />
-          <MetricCard
-            title="Resolution Time"
-            value="4.7 hrs"
-            trend="down"
-            trendPercent="-23.1%"
-            color="#EF4444"
-            icon="🛠"
-            data={generateTrendData()}
-            category="customer"
-          />
-        </MetricSection>
-
-        {/* Operations Metrics */}
-        <MetricSection
-          title="Operations Metrics"
-          color="#6B7280"
-          bgColor="#F9FAFB"
-        >
-          <MetricCard
-            title="Inventory Turnover"
-            value="8.4x"
-            trend="up"
-            trendPercent="+12.3%"
-            color="#6B7280"
-            icon="📦"
-            data={generateTrendData()}
-            category="operations"
-          />
-          <MetricCard
-            title="Order Fulfillment Time"
-            value="1.8 days"
-            trend="down"
-            trendPercent="-15.6%"
-            color="#6B7280"
-            icon="📬"
-            data={generateTrendData()}
-            category="operations"
-          />
-          <MetricCard
-            title="Employee Productivity"
-            value="87.2%"
-            trend="up"
-            trendPercent="+4.8%"
-            color="#6B7280"
-            icon="⚙"
-            data={generateTrendData()}
-            category="operations"
-          />
-          <MetricCard
-            title="Utilization Rate"
-            value="82.5%"
-            trend="stable"
-            trendPercent="+0.3%"
-            color="#6B7280"
-            icon="📐"
-            data={generateTrendData()}
-            category="operations"
-          />
-          <MetricCard
-            title="Defect Rate"
-            value="0.8%"
-            trend="down"
-            trendPercent="-25.0%"
-            color="#6B7280"
-            icon="🧪"
-            data={generateTrendData()}
-            category="operations"
-          />
-        </MetricSection>
+        ))}
       </div>
 
       {/* Floating Elements */}
