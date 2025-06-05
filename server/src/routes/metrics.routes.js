@@ -2,10 +2,7 @@ const express = require('express');
 const { authenticate } = require('../middleware');
 const { 
   getMetrics, 
-  createMetric, 
-  updateMetric, 
-  deleteMetric,
-  calculateMetricKPIs
+  createMetric
 } = require('../controllers/metrics.controller');
 
 const router = express.Router();
@@ -18,14 +15,5 @@ router.get('/', getMetrics);
 
 // Create new metric
 router.post('/', createMetric);
-
-// Update metric
-router.put('/:id', updateMetric);
-
-// Delete metric
-router.delete('/:id', deleteMetric);
-
-// Calculate KPIs for given data
-router.post('/calculate', calculateMetricKPIs);
 
 module.exports = router;

@@ -16,9 +16,12 @@ app.get('/health', (req, res) => {
   res.json({ 
     status: 'healthy',
     environment: nodeEnv,
-    timestamp: new Date().toISOString()
+  timestamp: new Date().toISOString()
   });
 });
+
+// Routes
+app.use('/api/metrics', metricsRoutes);
 
 // Routes
 app.use('/api/metrics', metricsRoutes);

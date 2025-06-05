@@ -36,14 +36,7 @@ export const useMetrics = (category) => {
       }
     };
 
-    fetchMetrics();
-
-    // Poll for updates every 30 seconds
-    const intervalId = setInterval(fetchMetrics, 30000);
-
-    return () => {
-      isMounted = false;
-      clearInterval(intervalId);
+    fetchMetrics();    return () => {      isMounted = false;
     };
   }, [category]);
 
